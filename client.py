@@ -1,54 +1,69 @@
-"""Программа-клиент"""
-import json
-import sys
-import socket
+from socket import *
 import time
-import constants
-import utils
+import json
+import argparse
+import ipaddress
+
+from client import *
 
 
-def client_presence(account_name='Guest'):
-    out = {
-        constants.ACTION: constants.PRESENCE,
-        constants.TIME: time.time(),
-        constants.USER: {
-            constants.ACCOUNT_NAME: account_name
+def presence_msg(username=None, password=None, status='online'):
+    msg = {
+        'action': 'presence',
+        'time': time.time(),
+        'user': {
+            'account_name': username,
+            'password': password,
+            'status': status
         }
     }
-    return out
+    return json.dumps(msg).encode(ENCODING)
 
 
-def process_answer(message):
-    if constants.RESPONSE in message:
-        if message[constants.RESPONSE] == 200:
-            return '200 : OK'
-        return f'400 : {message[constants.ERROR]}'
-    raise ValueError
+def preparing_message(msg: str, action: str = 'msg', ):
+    """Готовит сообщение серверу"""
+    data = {
+        'action': action,
+        'time': time.time(),
+        'message': msg,
+    }
+    return json.dumps(data).encode(ENCODING)
 
 
-def main():
-    try:
-        server_address = sys.argv[0]
-        server_port = int(sys.argv[0])
-        if server_port < 1024 or server_port > 65535:
-            raise ValueError
-    except IndexError:
-        server_address = constants.DEFAULT_IP_ADDRESS
-        server_port = constants.DEFAULT_PORT
-    except ValueError:
-        print('В диапазоне порта может быть число от 1024 до 65535.')
-        sys.exit(1)
+def send_message(s: socket, msg: bytes):
+    s.send(msg)
 
-    transport = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    transport.connect((server_address, server_port))
-    message_to_server = client_presence()
-    utils.send_message(transport, message_to_server)
-    try:
-        answer = process_answer(utils.make_message(transport))
-        print(answer)
-    except (ValueError, json.JSONDecodeError):
-        print('Сообщение сервера не декодировать')
+
+def get_response(s: socket, max_length=BUFFERSIZE):
+    return s.recv(max_length).decode(ENCODING)
+
+
+def parse_response(msg: str):
+    return json.loads(msg)
+
+
+def start(address, port):
+
+    while True:
+        s = socket(AF_INET, SOCK_STREAM)
+        s.connect((address, port))
+        presence_msg()
+        msg = input('>>> ')
+        send_message(s, preparing_message(msg))
+        resp = parse_response(get_response(s))
+        print('<<<', resp['response'])
+        s.close()
 
 
 if __name__ == '__main__':
-    main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument('address', type=str, help='IP-адрес сервера')
+    parser.add_argument('-p', dest='port', type=int, default=7777, help='TCP-порт на сервере (по умолчанию 7777)')
+    args = parser.parse_args()
+
+    try:
+        ipaddress.ip_address(args.address)
+    except ValueError:
+        parser.error('Введен не корректный ip адрес')
+
+    start(args.address, args.port)
