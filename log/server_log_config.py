@@ -25,4 +25,4 @@ if __name__ == '__main__':
     console.setLevel(logging.DEBUG)
     console.setFormatter(formatter)
     logger.addHandler(console)
-    logger.info('Тест логирования')
+    logger.info('Тест логирования 2')
