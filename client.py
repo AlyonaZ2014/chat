@@ -1,69 +1,79 @@
-from socket import *
-import time
+import sys
 import json
+import socket
+import time
 import argparse
-import ipaddress
+import logging
+from log import client_log_config
+from common import constants
+from common import utils
+from errors import ReqFieldMissingError
+from decos import log
 
-from client import *
+LOGGER = logging.getLogger('client')
 
 
-def presence_msg(username=None, password=None, status='online'):
-    msg = {
-        'action': 'presence',
-        'time': time.time(),
-        'user': {
-            'account_name': username,
-            'password': password,
-            'status': status
+@log
+def create_presence(account_name='Guest'):
+    out = {
+        constants.ACTION: constants.PRESENCE,
+        constants.TIME: time.time(),
+        constants.USER: {
+            constants.ACCOUNT_NAME: account_name
         }
     }
-    return json.dumps(msg).encode(ENCODING)
+    LOGGER.debug(f'Сформировано {constants.PRESENCE} сообщение для пользователя {account_name}')
+    return out
 
 
-def preparing_message(msg: str, action: str = 'msg', ):
-    """Готовит сообщение серверу"""
-    data = {
-        'action': action,
-        'time': time.time(),
-        'message': msg,
-    }
-    return json.dumps(data).encode(ENCODING)
+@log
+def process_ans(message):
+    LOGGER.debug(f'Разбор сообщения от сервера: {message}')
+    if constants.RESPONSE in message:
+        if message[constants.RESPONSE] == 200:
+            return '200 : OK'
+        return f'400 : {message[constants.ERROR]}'
+    raise ReqFieldMissingError(constants.RESPONSE)
 
 
-def send_message(s: socket, msg: bytes):
-    s.send(msg)
+@log
+def create_arg_parser():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('addr', default=constants.DEFAULT_IP_ADDRESS, nargs='?')
+    parser.add_argument('port', default=constants.DEFAULT_PORT, type=int, nargs='?')
+    return parser
 
 
-def get_response(s: socket, max_length=BUFFERSIZE):
-    return s.recv(max_length).decode(ENCODING)
+def main():
+    parser = create_arg_parser()
+    namespace = parser.parse_args(sys.argv[1:])
+    server_address = namespace.addr
+    server_port = namespace.port
 
+    if not 1023 < server_port < 65536:
+        LOGGER.critical(
+            f'Попытка запуска клиента с неподходящим номером порта: {server_port}. '
+            f'Допустимы адреса с 1024 до 65535. Клиент завершается.')
+        sys.exit(1)
 
-def parse_response(msg: str):
-    return json.loads(msg)
-
-
-def start(address, port):
-
-    while True:
-        s = socket(AF_INET, SOCK_STREAM)
-        s.connect((address, port))
-        presence_msg()
-        msg = input('>>> ')
-        send_message(s, preparing_message(msg))
-        resp = parse_response(get_response(s))
-        print('<<<', resp['response'])
-        s.close()
+    LOGGER.info(f'Запущен клиент с парамертами: адрес сервера: '
+                f'{server_address}, порт: {server_port}')
+    
+    try:
+        transport = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        transport.connect((server_address, server_port))
+        message_to_server = create_presence()
+        utils.send_message(transport, message_to_server)
+        answer = process_ans(utils.get_message(transport))
+        LOGGER.info(f'Принят ответ от сервера {answer}')
+    except json.JSONDecodeError:
+        LOGGER.error('Не удалось декодировать полученную Json строку.')
+    except ReqFieldMissingError as missing_error:
+        LOGGER.error(f'В ответе сервера отсутствует необходимое поле {missing_error.missing_field}')
+    except ConnectionRefusedError:
+        LOGGER.critical(f'Не удалось подключиться к серверу {server_address}:{server_port}, '
+                        f'конечный компьютер отверг запрос на подключение.')
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument('address', type=str, help='IP-адрес сервера')
-    parser.add_argument('-p', dest='port', type=int, default=7777, help='TCP-порт на сервере (по умолчанию 7777)')
-    args = parser.parse_args()
-
-    try:
-        ipaddress.ip_address(args.address)
-    except ValueError:
-        parser.error('Введен не корректный ip адрес')
-
-    start(args.address, args.port)
+    main()
