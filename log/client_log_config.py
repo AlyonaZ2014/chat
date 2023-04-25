@@ -1,6 +1,8 @@
 import logging
 import os.path
 
+
+
 logger = logging.getLogger('chat.client')
 
 
