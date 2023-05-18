@@ -7,6 +7,8 @@ DEFAULT_IP_ADDRESS = '127.0.0.1'
 ENCODING = 'utf-8'
 LOGGING_LEVEL = logging.DEBUG
 
+SERVER_DATABASE = 'sqlite:///server_base.db3'
+
 ACTION = 'action'
 TIME = 'time'
 USER = 'user'
