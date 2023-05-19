@@ -10,7 +10,7 @@ import log.client_log_config
 import logger
 from log import client_log_config
 from common.constants import *
-from common.utils import get_message, send_message
+from common.utils import *
 from errors import ReqFieldMissingError, IncorrectDataRecivedError, ServerError
 from decos import log
 from common.utils import get_message, send_message
@@ -180,7 +180,7 @@ def main():
         transport.connect((server_address, server_port))
         send_message(transport, create_presence(client_name))
         answer = process_response_ans(get_message(transport))
-        # logger.info
+        
         logging.info(f'Установлено соединение с сервером. Ответ сервера: {answer}')
         print(f'Установлено соединение с сервером.')
     except json.JSONDecodeError:

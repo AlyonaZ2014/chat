@@ -10,7 +10,7 @@ import threading
 import log.server_log_config
 from errors import IncorrectDataRecivedError
 from common.constants import *
-from common.utils import get_message, send_message
+from common.utils import *
 from decos import log
 from descrptrs import Port
 from metaclasses import ServerMaker
