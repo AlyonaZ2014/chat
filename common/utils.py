@@ -1,12 +1,13 @@
+from common.constants import *
+from errors import IncorrectDataRecivedError, NonDictInputError
 import json
 import sys
-from .constants import *
-# MAX_PACKAGE_LENGTH, ENCODING
-from errors import IncorrectDataRecivedError, NonDictInputError
-from decos import log
 sys.path.append('../')
+from decos import log
 
 
+# Утилита приёма и декодирования сообщения
+# принимает байты выдаёт словарь, если приняточто-то другое отдаёт ошибку значения
 @log
 def get_message(client):
     encoded_response = client.recv(MAX_PACKAGE_LENGTH)
@@ -15,10 +16,14 @@ def get_message(client):
         response = json.loads(json_response)
         if isinstance(response, dict):
             return response
+        else:
+            raise IncorrectDataRecivedError
+    else:
         raise IncorrectDataRecivedError
-    raise IncorrectDataRecivedError
 
 
+# Утилита кодирования и отправки сообщения
+# принимает словарь и отправляет его
 @log
 def send_message(sock, message):
     if not isinstance(message, dict):

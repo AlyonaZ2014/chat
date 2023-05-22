@@ -1,36 +1,31 @@
-from socket import socket
-from unittest import TestCase, main
-import json
-
 import sys
-import os
-dir = os.path.dirname(os.path.dirname(__file__))
-sys.path.append(dir)
+sys.path.append('../')
+from client import create_presence, process_response_ans
+from common.constants import *
+import unittest
+from errors import ReqFieldMissingError, ServerError
 
-from client import presence_msg, preparing_message
-from client import *
 
+# Класс с тестами
+class TestClass(unittest.TestCase):
+    # тест коректного запроса
+    def test_def_presense(self):
+        test = create_presence('Guest')
+        test[TIME] = 1.1  # время необходимо приравнять принудительно иначе тест никогда не будет пройден
+        self.assertEqual(test, {ACTION: PRESENCE, TIME: 1.1, USER: {ACCOUNT_NAME: 'Guest'}})
 
-class TestClient(TestCase):
-    def test_presence_msg(self):
-        result = presence_msg()
-        self.assertEqual(type(result), bytes)
+    # тест корректтного разбора ответа 200
+    def test_200_ans(self):
+        self.assertEqual(process_response_ans({RESPONSE: 200}), '200 : OK')
 
-        obj = json.loads(result.decode(ENCODING))
-        self.assertEqual(type(obj), dict)
-        self.assertEqual(type(obj.get('action')), str)
-        self.assertEqual(type(obj.get('time')), float)
+    # тест корректного разбора 400
+    def test_400_ans(self):
+        self.assertRaises(ServerError, process_response_ans , {RESPONSE: 400, ERROR: 'Bad Request'})
 
-    def test_preparing_message(self):
-        result = preparing_message(msg='Hello world', action='msg')
-        self.assertEqual(type(result), bytes)
-
-        obj = json.loads(result.decode(ENCODING))
-        self.assertEqual(obj.get('message'), 'Hello world')
-        self.assertEqual(type(obj.get('action')), str)
-        self.assertEqual(obj.get('action'), 'msg')
-        self.assertEqual(type(obj.get('time')), float)
+    # тест исключения без поля RESPONSE
+    def test_no_response(self):
+        self.assertRaises(ReqFieldMissingError, process_response_ans, {ERROR: 'Bad Request'})
 
 
 if __name__ == '__main__':
-    main()
+    unittest.main()
