@@ -1,5 +1,6 @@
 import dis
 
+
 # Метакласс для проверки соответствия сервера:
 class ServerMaker(type):
     def __init__(cls, clsname, bases, clsdict):
