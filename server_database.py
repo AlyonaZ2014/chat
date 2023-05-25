@@ -99,7 +99,7 @@ class ServerStorage:
         self.metadata.create_all(self.database_engine)
 
         # Создаём отображения
-        mapper(self.AllUsers, users_table)
+        (self.AllUsers, users_table)
         mapper(self.ActiveUsers, active_users_table)
         mapper(self.LoginHistory, user_login_history)
         mapper(self.UsersContacts, contacts)
