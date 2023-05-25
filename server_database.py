@@ -1,6 +1,6 @@
 from sqlalchemy import create_engine, Table, Column, Integer, String, MetaData, ForeignKey, DateTime
 from sqlalchemy.orm import mapper, sessionmaker
-from common.constants import *
+from common.variables import *
 import datetime
 
 
@@ -48,7 +48,6 @@ class ServerStorage:
 
     def __init__(self , path):
         # Создаём движок базы данных
-        print(path)
         self.database_engine = create_engine(f'sqlite:///{path}', echo=False, pool_recycle=7200,
                                              connect_args={'check_same_thread': False})
 
@@ -99,7 +98,7 @@ class ServerStorage:
         self.metadata.create_all(self.database_engine)
 
         # Создаём отображения
-        (self.AllUsers, users_table)
+        mapper(self.AllUsers, users_table)
         mapper(self.ActiveUsers, active_users_table)
         mapper(self.LoginHistory, user_login_history)
         mapper(self.UsersContacts, contacts)
@@ -192,10 +191,10 @@ class ServerStorage:
             return
 
         # Удаляем требуемое
-        print(self.session.query(self.UsersContacts).filter(
+        self.session.query(self.UsersContacts).filter(
             self.UsersContacts.user == user.id,
             self.UsersContacts.contact == contact.id
-        ).delete())
+        ).delete()
         self.session.commit()
 
     # Функция возвращает список известных пользователей со временем последнего входа.

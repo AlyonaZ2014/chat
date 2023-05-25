@@ -1,7 +1,7 @@
 import subprocess
 from tkinter import Entry, Button, Tk, Label, messagebox, StringVar
 
-from common.constants import DEFAULT_IP_ADDRESS, DEFAULT_PORT
+from common.variables import DEFAULT_IP_ADDRESS, DEFAULT_PORT
 
 
 class Launcher:

@@ -1,9 +1,9 @@
 import sys
 sys.path.append('../')
 from common.utils import *
-from common.constants import *
+from common.variables import *
 import unittest
-from errors import NonDictInputError
+from common.errors import NonDictInputError
 
 
 # Тестовый класс для тестирования отпраки и получения, при создании требует словарь, который будет прогонятся
